@@ -73,6 +73,42 @@ function setup() {
   Logger.log('Next: add the Photo question, then Deploy -> Web app.');
 }
 
+/* ---------- Run ONCE to allow the "Remove" button to delete photos ----------
+   (Grants the Drive permission. Does nothing else — safe to run.)          */
+function authorize() {
+  DriveApp.getRootFolder();
+  Logger.log('✅ Authorized. The Remove button can now delete photos. Now redeploy a New version.');
+}
+
+/* ---------- FIX: re-point the script to the correct database ----------
+   Run this if the page shows no entries after `setup` was run twice.
+   It scans your Drive for the "Matrimony Database" that actually has a
+   Photo column + real entries, and points the web app back at it.      */
+function autoFixSheet() {
+  const files = DriveApp.getFilesByName('Matrimony Database');
+  let chosen = null, chosenScore = -1;
+  while (files.hasNext()) {
+    const f = files.next();
+    try {
+      const ss = SpreadsheetApp.openById(f.getId());
+      let resp = null, respRows = -1;
+      ss.getSheets().forEach(sh => {
+        const head = sh.getLastRow() ? String(sh.getRange(1, 1, 1, 1).getValue()).toLowerCase() : '';
+        if (head.indexOf('timestamp') !== -1 && sh.getLastRow() > respRows) { respRows = sh.getLastRow(); resp = sh; }
+      });
+      if (!resp) continue;
+      const header = resp.getRange(1, 1, 1, resp.getLastColumn()).getValues()[0].map(h => String(h).toLowerCase());
+      const hasPhoto = header.some(h => h.indexOf('photo') !== -1);
+      const dataRows = resp.getLastRow() - 1;
+      const score = (hasPhoto ? 100000 : 0) + dataRows;     // prefer the one WITH a Photo column + most entries
+      if (score > chosenScore) { chosenScore = score; chosen = ss; }
+    } catch (e) {}
+  }
+  if (!chosen) { Logger.log('⚠️ No "Matrimony Database" found.'); return; }
+  PropertiesService.getScriptProperties().setProperty('SHEET_ID', chosen.getId());
+  Logger.log('✅ Now using the correct database:\n   ' + chosen.getName() + '\n   ' + chosen.getUrl());
+}
+
 /* ---------- Re-print the sheet link anytime ---------- */
 function showLinks() {
   const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
