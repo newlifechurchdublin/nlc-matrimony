@@ -72,6 +72,7 @@
   .sheet .foot{display:flex; gap:10px; padding:14px 18px; border-top:1px solid var(--line)}
   .btn.ghost{background:#fff; color:var(--green); border:1px solid var(--green)}
   .btn.call{background:#2e7d4f}
+  .btn.danger{background:#fff; color:#b3261e; border:1px solid #e2b6b2}
   .close-x{margin-left:auto; background:transparent; border:0; font-size:26px; color:var(--muted); cursor:pointer; line-height:1; padding:0 4px}
 
   /* Footer with pastor photo */
@@ -224,6 +225,7 @@ function applyData(d){ PROFILES = buildProfiles((d&&d.table)||[]); buildStatusFi
 /* ---------- Data ---------- */
 let PROFILES = [];
 const FIELD_KEYS = {
+  ts:       ['timestamp'],
   photo:    ['photo','image','picture'],
   name:     ['full name','name'],
   gender:   ['gender','sex'],
@@ -280,8 +282,10 @@ function buildProfiles(table){
     const name = get(r,'name');
     if(!name) continue;
     const dob = get(r,'dob');
+    const tsRaw = get(r,'ts');
     out.push({
-      _seq:i, name, dob: formatDOB(dob), age: ageFromDOB(dob),
+      _seq:i, ts: tsRaw ? new Date(tsRaw).getTime() : 0,
+      name, dob: formatDOB(dob), age: ageFromDOB(dob),
       gender: normGender(get(r,'gender')), genderRaw: get(r,'gender'),
       height:get(r,'height'), status:get(r,'status'), education:get(r,'education'),
       job:get(r,'job'), location:get(r,'location'), native:get(r,'native'),
@@ -401,11 +405,28 @@ function openModal(i){
       ${phone?`<a class="btn call" href="tel:${phone}">📞 Call</a><a class="btn ghost" href="https://wa.me/${phone.replace('+','')}" target="_blank">WhatsApp</a>`
             :`<span style="color:var(--muted);font-size:13px;align-self:center">No phone number on file</span>`}
       <button class="btn ghost" style="margin-left:auto" onclick="window.print()">Print</button>
+      <button class="btn danger" onclick="removeProfile(${i})">🗑 Remove</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 document.addEventListener('keyup',e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ---------- Remove a profile (deletes the row + photo) ---------- */
+function removeProfile(i){
+  const p = PROFILES[i]; if(!p) return;
+  if(!p.ts){ alert('Cannot identify this entry automatically. Please delete the row in the Matrimony Database sheet instead.'); return; }
+  if(!confirm('Remove ' + p.name + '’s profile permanently?\n\nThis also deletes their photo from Drive. This cannot be undone.')) return;
+  const url = CONFIG.API_URL;
+  const btn = event && event.target; if(btn){ btn.textContent='Removing…'; btn.disabled=true; }
+  fetch(url + (url.includes('?')?'&':'?') + 'action=delete&pin=' + encodeURIComponent(SESSION_PIN) + '&ts=' + encodeURIComponent(p.ts) + '&cb=' + Date.now())
+    .then(r=>r.json())
+    .then(d=>{
+      if(d && d.ok){ closeModal(); load(); }
+      else { alert('Could not remove: ' + ((d&&d.error)||'unknown error')); if(btn){btn.textContent='🗑 Remove';btn.disabled=false;} }
+    })
+    .catch(e=>{ alert('Network error: ' + e.message); if(btn){btn.textContent='🗑 Remove';btn.disabled=false;} });
+}
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 </script>

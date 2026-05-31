@@ -24,7 +24,7 @@
  *       Copy the Web app URL and send it to finish the page.
  *****************************************************************/
 
-const PIN = '1234';   // <-- CHANGE THIS to a PIN of your choice
+const PIN = 'nlcmat';   // <-- CHANGE THIS to a PIN of your choice
 
 /* ---------- 1) Run this ONCE to build everything ---------- */
 function setup() {
@@ -90,20 +90,19 @@ function doGet(e) {
   if (String(p.pin || '') !== String(PIN)) return reply({ error: 'unauthorized' });
 
   try {
+    if (String(p.action || '') === 'delete') return reply(deleteProfile(p.ts));
     return reply({ table: readTable() });
   } catch (err) {
     return reply({ error: String(err) });
   }
 }
 
-/* Reads the form-responses sheet as a 2D array (header row first). */
-function readTable() {
+/* Finds the sheet that holds the form responses (header contains "Timestamp"),
+   else falls back to the sheet with the most rows. */
+function responsesSheet() {
   const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-  if (!id) return [];
+  if (!id) return null;
   const ss = SpreadsheetApp.openById(id);
-
-  // Pick the sheet that holds the form responses (header contains "Timestamp"),
-  // else fall back to the sheet with the most rows.
   let sheet = null, best = -1;
   ss.getSheets().forEach(sh => {
     const rows = sh.getLastRow();
@@ -111,7 +110,43 @@ function readTable() {
     if (head.indexOf('timestamp') !== -1) sheet = sh;
     if (!sheet && rows > best) { best = rows; sheet = sh; }
   });
-  if (!sheet || sheet.getLastRow() < 1) return [];
+  return sheet;
+}
 
+/* Reads the form-responses sheet as a 2D array (header row first). */
+function readTable() {
+  const sheet = responsesSheet();
+  if (!sheet || sheet.getLastRow() < 1) return [];
   return sheet.getDataRange().getValues();   // Dates become ISO strings via JSON
+}
+
+/* Deletes one profile (its sheet row + its photo file in Drive),
+   matched by the unique Timestamp value (passed as milliseconds). */
+function deleteProfile(ts) {
+  const target = Number(ts);
+  if (!target) return { error: 'bad id' };
+
+  const sheet = responsesSheet();
+  if (!sheet) return { error: 'no sheet' };
+
+  const values  = sheet.getDataRange().getValues();
+  const headers = values[0].map(h => String(h).toLowerCase());
+  const photoCol = headers.findIndex(h =>
+    h.indexOf('photo') !== -1 || h.indexOf('image') !== -1 || h.indexOf('picture') !== -1);
+
+  for (let i = 1; i < values.length; i++) {
+    const cell = values[i][0];                       // Timestamp is column A
+    const t = (cell instanceof Date) ? cell.getTime() : new Date(cell).getTime();
+    if (t === target) {
+      if (photoCol >= 0) {                            // move photo to Drive Trash
+        try {
+          const m = String(values[i][photoCol]).match(/[-\w]{25,}/);
+          if (m) DriveApp.getFileById(m[0]).setTrashed(true);
+        } catch (e) {}
+      }
+      sheet.deleteRow(i + 1);                         // +1: row 1 is the header
+      return { ok: true };
+    }
+  }
+  return { error: 'not found' };
 }
