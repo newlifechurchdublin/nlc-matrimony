@@ -93,8 +93,9 @@
   const CONFIG = {
     // 1) Apps Script "Web app" URL (ends with /exec):
     API_URL: "https://script.google.com/macros/s/AKfycbxD3qiv6liLUVkXj_Wx1gyVHe8hel4khaxm8hDraYXKhPAkCmCHLju77hcdjD5WE7yTkA/exec",
-    // 2) The PIN must MATCH the PIN set inside Apps-Script-Code.gs:
-    PIN: "nlcmat",
+    // 2) Leave PIN blank here — the real PIN lives ONLY in Apps-Script-Code.gs
+    //    and is checked on the server, so it is never exposed in this page.
+    PIN: "",
     // Branding (already set for New Life Church)
     CHURCH_NAME: "New Life Church",
     SUBTITLE: "Matrimony — search profiles by name, age, place, qualification & more",
