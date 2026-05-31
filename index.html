@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>New Life Church — Matrimony Search</title>
+<style>
+  :root{
+    --bg:#f3f1e9; --card:#ffffff; --ink:#2c2f28; --muted:#6e7268;
+    --green:#5a9e2f; --green2:#7cb342; --brown:#6b4f2a; --line:#e3e0d3; --chip:#eaf2e0;
+    --shadow:0 4px 14px rgba(50,60,30,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:"Segoe UI",system-ui,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.45;}
+  header.app{
+    background:linear-gradient(135deg,var(--green),var(--green2));
+    color:#fff; padding:14px 16px; box-shadow:var(--shadow); position:sticky; top:0; z-index:20;
+  }
+  header.app .inner{max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:14px}
+  header.app img.logo{height:46px; width:46px; border-radius:10px; background:#fff; padding:4px; object-fit:contain; flex:none}
+  header.app h1{margin:0; font-size:19px; font-weight:600; letter-spacing:.3px}
+  header.app p{margin:2px 0 0; font-size:12.5px; opacity:.92}
+  .wrap{max-width:1100px; margin:0 auto; padding:16px}
+
+  /* PIN gate */
+  #gate{position:fixed; inset:0; background:linear-gradient(160deg,#3f6b22,#243f15); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;}
+  #gate .box{background:#fff; border-radius:16px; padding:30px 26px; max-width:340px; width:100%; text-align:center; box-shadow:var(--shadow);}
+  #gate img.logo{height:70px; margin-bottom:8px}
+  #gate h2{margin:0 0 4px; color:var(--green); font-size:20px}
+  #gate p{margin:0 0 16px; font-size:13px; color:var(--muted)}
+  #gate input{width:100%; padding:12px; font-size:18px; text-align:center; letter-spacing:6px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;}
+  #gate button,.btn{background:var(--green); color:#fff; border:0; padding:11px 18px; border-radius:10px; font-size:15px; cursor:pointer; font-weight:600;}
+  #gate .err{color:#b3261e; font-size:13px; min-height:18px; margin-top:8px}
+
+  /* Controls */
+  .controls{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow); margin-bottom:16px;}
+  .controls .row{display:flex; gap:10px; flex-wrap:wrap}
+  .controls input[type=search]{flex:1 1 220px; min-width:0; padding:12px 14px; font-size:15px; border:1px solid var(--line); border-radius:10px;}
+  .controls select{padding:11px 12px; font-size:14px; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  .meta-line{display:flex; justify-content:space-between; align-items:center; margin:4px 2px 14px; font-size:13px; color:var(--muted); flex-wrap:wrap; gap:8px}
+  .meta-line a{color:var(--green); cursor:pointer; text-decoration:none; font-weight:600}
+
+  /* Cards grid */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; transition:transform .12s ease; cursor:pointer;}
+  .card:hover{transform:translateY(-3px)}
+  .photo{width:100%; aspect-ratio:1/1; background:#d9e2c8 center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:46px; color:#fff; font-weight:600;}
+  .card .body{padding:12px 14px; flex:1}
+  .card h3{margin:0 0 2px; font-size:17px}
+  .card .sub{font-size:13px; color:var(--muted); margin-bottom:8px}
+  .tags{display:flex; flex-wrap:wrap; gap:6px}
+  .tag{background:var(--chip); color:var(--green); font-size:12px; padding:3px 9px; border-radius:20px}
+  .gender-M{border-left:5px solid #4a76b8}
+  .gender-F{border-left:5px solid #b8617f}
+
+  .empty{text-align:center; padding:60px 20px; color:var(--muted)}
+  .empty.big{font-size:15px}
+
+  /* Detail modal */
+  #modal{position:fixed; inset:0; background:rgba(25,35,12,.6); z-index:40; display:none; align-items:flex-start; justify-content:center; padding:18px; overflow:auto}
+  #modal.open{display:flex}
+  .sheet{background:#fff; border-radius:16px; max-width:560px; width:100%; box-shadow:var(--shadow); overflow:hidden; margin:auto;}
+  .sheet .top{display:flex; gap:14px; padding:18px; background:var(--chip)}
+  .sheet .top img,.sheet .top .ph{width:96px; height:96px; border-radius:12px; object-fit:cover; flex:none; background:#d9e2c8; display:flex; align-items:center; justify-content:center; font-size:36px; color:#fff; font-weight:600;}
+  .sheet .top h2{margin:0 0 4px; font-size:21px}
+  .sheet .top .sub{color:var(--muted); font-size:14px}
+  .sheet .detail{padding:8px 18px 18px}
+  .drow{display:flex; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px}
+  .drow:last-child{border-bottom:0}
+  .drow .k{flex:none; width:150px; color:var(--muted); font-weight:600}
+  .drow .v{flex:1}
+  .sheet .foot{display:flex; gap:10px; padding:14px 18px; border-top:1px solid var(--line)}
+  .btn.ghost{background:#fff; color:var(--green); border:1px solid var(--green)}
+  .btn.call{background:#2e7d4f}
+  .close-x{margin-left:auto; background:transparent; border:0; font-size:26px; color:var(--muted); cursor:pointer; line-height:1; padding:0 4px}
+
+  /* Footer with pastor photo */
+  footer.app{max-width:1100px; margin:24px auto 30px; padding:16px; display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
+  footer.app img{width:64px; height:64px; border-radius:50%; object-fit:cover; flex:none}
+  footer.app .t{font-size:13px; color:var(--muted)}
+  footer.app .t b{color:var(--ink)}
+
+  @media (max-width:480px){ .drow .k{width:120px} .sheet .top img,.sheet .top .ph{width:74px;height:74px} }
+  @media print{ header.app,.controls,.meta-line,#gate,.card,footer.app{display:none!important} #modal{position:static;background:#fff;display:block;padding:0} .sheet{box-shadow:none} .sheet .foot{display:none} }
+</style>
+</head>
+<body>
+
+<!-- ============================================================= -->
+<!--  CONFIG — EDIT THESE LINES ONLY (see SETUP-GUIDE.md)           -->
+<!-- ============================================================= -->
+<script>
+  const CONFIG = {
+    // 1) Paste the Apps Script "Web app" URL here (ends with /exec):
+    API_URL: "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE",
+    // 2) The PIN must MATCH the PIN set inside Apps-Script-Code.gs:
+    PIN: "1234",
+    // Branding (already set for New Life Church)
+    CHURCH_NAME: "New Life Church",
+    SUBTITLE: "Matrimony — search profiles by name, age, place, qualification & more",
+    LOGO: "logo.png",
+    PASTOR_PHOTO: "Pastorandfamily.png",
+    PASTOR_CAPTION: "Coordinated with love and prayer by our Pastor & family."
+  };
+</script>
+<!-- ============================================================= -->
+
+<!-- PIN gate -->
+<div id="gate">
+  <div class="box">
+    <img class="logo" id="gateLogo" alt="logo" />
+    <h2 id="gateTitle">New Life Church</h2>
+    <p>Matrimony — enter the access PIN to continue.</p>
+    <input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="off" />
+    <div><button onclick="checkPin()">Unlock</button></div>
+    <div class="err" id="pinErr"></div>
+  </div>
+</div>
+
+<header class="app">
+  <div class="inner">
+    <img class="logo" id="hdrLogo" alt="logo" />
+    <div>
+      <h1 id="hdrTitle">New Life Church</h1>
+      <p id="hdrSub">Matrimony</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="row">
+      <input id="q" type="search" placeholder="🔍  Search name, job, place, church, qualification…" oninput="render()" />
+      <select id="fGender" onchange="render()">
+        <option value="">All — Gender</option>
+        <option value="M">Male / Groom</option>
+        <option value="F">Female / Bride</option>
+      </select>
+      <select id="fStatus" onchange="render()"><option value="">All — Marital status</option></select>
+      <select id="fAge" onchange="render()">
+        <option value="">All — Age</option>
+        <option value="18-25">18–25</option>
+        <option value="26-30">26–30</option>
+        <option value="31-35">31–35</option>
+        <option value="36-45">36–45</option>
+        <option value="46-99">46+</option>
+      </select>
+      <select id="sort" onchange="render()">
+        <option value="new">Newest first</option>
+        <option value="ageA">Age: low→high</option>
+        <option value="ageD">Age: high→low</option>
+        <option value="name">Name A→Z</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="meta-line">
+    <span id="count">Loading…</span>
+    <a onclick="reload()">↻ Refresh data</a>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" style="display:none"></div>
+</div>
+
+<footer class="app">
+  <img id="footPhoto" alt="Pastor and family" />
+  <div class="t"><b id="footName">New Life Church</b><br><span id="footCap"></span></div>
+</footer>
+
+<!-- Detail modal -->
+<div id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="sheet" id="sheetBox"></div>
+</div>
+
+<script>
+/* ---------- Branding ---------- */
+document.getElementById('gateLogo').src = CONFIG.LOGO;
+document.getElementById('hdrLogo').src  = CONFIG.LOGO;
+document.getElementById('footPhoto').src= CONFIG.PASTOR_PHOTO;
+document.getElementById('gateTitle').textContent = CONFIG.CHURCH_NAME;
+document.getElementById('hdrTitle').textContent  = CONFIG.CHURCH_NAME;
+document.getElementById('hdrSub').textContent    = CONFIG.SUBTITLE;
+document.getElementById('footName').textContent  = CONFIG.CHURCH_NAME;
+document.getElementById('footCap').textContent   = CONFIG.PASTOR_CAPTION;
+[ 'gateLogo','hdrLogo','footPhoto' ].forEach(id=>{ const el=document.getElementById(id); el.onerror=()=>el.style.display='none'; });
+
+/* ---------- PIN gate (checked on the server) ---------- */
+let SESSION_PIN = sessionStorage.getItem('mat_pin') || '';
+if (SESSION_PIN){ openApp(); load(); }
+document.getElementById('pinInput').addEventListener('keyup', e=>{ if(e.key==='Enter') checkPin(); });
+function checkPin(){
+  const v = document.getElementById('pinInput').value.trim();
+  if(!v) return;
+  const url = CONFIG.API_URL;
+  document.getElementById('pinErr').textContent = 'Checking…';
+  // Preview mode: page not linked to the backend yet
+  if(!url || url.indexOf('PASTE_') === 0){
+    if(v === String(CONFIG.PIN)){
+      SESSION_PIN=v; sessionStorage.setItem('mat_pin',v); openApp();
+      showEmpty('⚙️ Almost there','This page isn’t linked to your Google data yet. Once the Apps Script Web app URL is added, profiles will appear here.');
+      document.getElementById('count').textContent='Not connected';
+    } else { document.getElementById('pinErr').textContent='Wrong PIN, please try again.'; }
+    return;
+  }
+  // Live mode: verify the PIN against the server
+  fetchData(v).then(d=>{
+    SESSION_PIN=v; sessionStorage.setItem('mat_pin',v); openApp(); applyData(d);
+  }).catch(err=>{
+    document.getElementById('pinErr').textContent =
+      (err.message==='unauthorized') ? 'Wrong PIN, please try again.' : 'Connection problem — please try again.';
+  });
+}
+function openApp(){ document.getElementById('gate').style.display='none'; }
+function fetchData(pin){
+  const url = CONFIG.API_URL;
+  return fetch(url + (url.includes('?')?'&':'?') + 'action=data&pin=' + encodeURIComponent(pin) + '&cb=' + Date.now())
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d=>{ if(d && d.error) throw new Error(d.error); return d; });
+}
+function applyData(d){ PROFILES = buildProfiles((d&&d.table)||[]); buildStatusFilter(); render(); }
+
+/* ---------- Data ---------- */
+let PROFILES = [];
+const FIELD_KEYS = {
+  photo:    ['photo','image','picture'],
+  name:     ['full name','name'],
+  gender:   ['gender','sex'],
+  dob:      ['date of birth','birth','dob'],
+  height:   ['height'],
+  status:   ['marital','status'],
+  education:['education','qualification','study','degree'],
+  job:      ['occupation','job','profession','work '],
+  location: ['working location','current location','location','city','residing'],
+  native:   ['native','hometown','home town','place'],
+  church:   ['church','denomination','parish','congregation'],
+  father:   ['father'],
+  mother:   ['mother'],
+  contact:  ['contact person','guardian'],
+  phone:    ['phone','mobile','contact number','whatsapp'],
+  expect:   ['expectation','partner','preference','looking'],
+  notes:    ['additional','notes','about','remarks']
+};
+
+function reload(){ document.getElementById('count').textContent='Refreshing…'; load(); }
+
+function load(){
+  const url = CONFIG.API_URL;
+  if (!url || url.indexOf('PASTE_') === 0){
+    showEmpty('⚙️ Almost there','This page isn’t linked to your Google data yet.');
+    document.getElementById('count').textContent='Not connected';
+    return;
+  }
+  if(!SESSION_PIN) return;
+  fetchData(SESSION_PIN).then(applyData).catch(err=>{
+    if(err.message==='unauthorized'){ sessionStorage.removeItem('mat_pin'); location.reload(); return; }
+    showEmpty('Could not load data', 'Please check the connection and try Refresh.<br><small>'+err.message+'</small>');
+    document.getElementById('count').textContent='Load error';
+  });
+}
+
+/* ---------- Build profiles from the data table (header row first) ---------- */
+function buildProfiles(table){
+  if(!table || table.length < 2) return [];
+  const headers = table[0].map(h => String(h==null?'':h).trim().toLowerCase());
+  const idx = {};
+  for(const field in FIELD_KEYS){
+    idx[field] = -1;
+    for(const kw of FIELD_KEYS[field]){
+      const found = headers.findIndex(h => h.includes(kw));
+      if(found !== -1){ idx[field] = found; break; }
+    }
+  }
+  const get = (r,f) => idx[f] >= 0 ? String(r[idx[f]]==null?'':r[idx[f]]).trim() : '';
+  const out = [];
+  for(let i=1;i<table.length;i++){
+    const r = table[i];
+    if(!r || !r.some(c => String(c==null?'':c).trim() !== '')) continue;
+    const name = get(r,'name');
+    if(!name) continue;
+    const dob = get(r,'dob');
+    out.push({
+      _seq:i, name, dob: formatDOB(dob), age: ageFromDOB(dob),
+      gender: normGender(get(r,'gender')), genderRaw: get(r,'gender'),
+      height:get(r,'height'), status:get(r,'status'), education:get(r,'education'),
+      job:get(r,'job'), location:get(r,'location'), native:get(r,'native'),
+      church:get(r,'church'), father:get(r,'father'), mother:get(r,'mother'),
+      contact:get(r,'contact'), phone:get(r,'phone'), expect:get(r,'expect'),
+      notes:get(r,'notes'), photo: driveThumb(get(r,'photo'))
+    });
+  }
+  return out;
+}
+function formatDOB(s){
+  if(!s) return '';
+  const d = new Date(s);
+  if(isNaN(d)) return s;
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function normGender(g){
+  g=(g||'').toLowerCase();
+  if(g.startsWith('m')||g.includes('groom')||g.includes('boy')||g.includes('male')) return 'M';
+  if(g.startsWith('f')||g.includes('bride')||g.includes('girl')||g.includes('female')) return 'F';
+  return '';
+}
+function ageFromDOB(s){
+  if(!s) return null;
+  let d = new Date(s);
+  if(isNaN(d)){
+    const m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if(m){ let y=+m[3]; if(y<100)y+=2000; d=new Date(y, +m[2]-1, +m[1]); }
+  }
+  if(isNaN(d)) return null;
+  const t=new Date(); let a=t.getFullYear()-d.getFullYear();
+  if(t.getMonth()<d.getMonth() || (t.getMonth()===d.getMonth() && t.getDate()<d.getDate())) a--;
+  return (a>0 && a<120) ? a : null;
+}
+function driveThumb(url){
+  if(!url) return '';
+  let m = url.match(/[-\w]{25,}/);
+  if(!m) return url.startsWith('http')?url:'';
+  return 'https://drive.google.com/thumbnail?id='+m[0]+'&sz=w600';
+}
+
+/* ---------- Filters ---------- */
+function buildStatusFilter(){
+  const sel=document.getElementById('fStatus');
+  const have=new Set(Array.from(sel.options).map(o=>o.value));
+  const vals=[...new Set(PROFILES.map(p=>p.status).filter(Boolean))].sort();
+  vals.forEach(v=>{ if(!have.has(v)){ const o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);} });
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const q=document.getElementById('q').value.toLowerCase().trim();
+  const fg=document.getElementById('fGender').value;
+  const fs=document.getElementById('fStatus').value;
+  const fa=document.getElementById('fAge').value;
+  const sort=document.getElementById('sort').value;
+
+  let list=PROFILES.filter(p=>{
+    if(fg && p.gender!==fg) return false;
+    if(fs && p.status!==fs) return false;
+    if(fa){ if(p.age==null) return false; const [lo,hi]=fa.split('-').map(Number); if(p.age<lo||p.age>hi) return false; }
+    if(q){ const hay=[p.name,p.job,p.location,p.native,p.church,p.education,p.status,p.notes,p.expect].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(sort==='name') return a.name.localeCompare(b.name);
+    if(sort==='ageA') return (a.age??999)-(b.age??999);
+    if(sort==='ageD') return (b.age??-1)-(a.age??-1);
+    return b._seq-a._seq;
+  });
+
+  const grid=document.getElementById('grid');
+  document.getElementById('count').textContent = list.length+' of '+PROFILES.length+' profile'+(PROFILES.length===1?'':'s');
+
+  if(!PROFILES.length){ showEmpty('No profiles yet','Add profiles through the Google Form, then tap “Refresh data”.'); return; }
+  if(!list.length){ showEmpty('No matches','Try clearing some filters or the search box.'); return; }
+  document.getElementById('empty').style.display='none';
+
+  grid.innerHTML = list.map(p=>{
+    const initial=(p.name[0]||'?').toUpperCase();
+    const photo = p.photo ? `<div class="photo" style="background-image:url('${p.photo}')"></div>` : `<div class="photo">${initial}</div>`;
+    const sub=[p.age?p.age+' yrs':'', p.height, p.status].filter(Boolean).join(' · ');
+    const tags=[p.job,p.location,p.church].filter(Boolean).slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    return `<div class="card gender-${p.gender}" onclick="openModal(${PROFILES.indexOf(p)})">
+      ${photo}<div class="body"><h3>${esc(p.name)}</h3><div class="sub">${esc(sub)||'&nbsp;'}</div><div class="tags">${tags}</div></div></div>`;
+  }).join('');
+}
+
+function showEmpty(title,msg){
+  document.getElementById('grid').innerHTML='';
+  const e=document.getElementById('empty'); e.style.display='block'; e.className='empty big';
+  e.innerHTML='<h3>'+title+'</h3><p>'+msg+'</p>';
+}
+
+/* ---------- Detail modal ---------- */
+function openModal(i){
+  const p=PROFILES[i]; if(!p) return;
+  const initial=(p.name[0]||'?').toUpperCase();
+  const pic = p.photo ? `<img src="${p.photo}" alt="" onerror="this.outerHTML='<div class=ph>${initial}</div>'">` : `<div class="ph">${initial}</div>`;
+  const rows=[
+    ['Age', p.age?p.age+' years':''], ['Gender', p.gender==='M'?'Male / Groom':p.gender==='F'?'Female / Bride':p.genderRaw],
+    ['Date of birth', p.dob], ['Height', p.height], ['Marital status', p.status],
+    ['Education', p.education], ['Occupation', p.job], ['Working location', p.location],
+    ['Native place', p.native], ['Church', p.church], ['Father', p.father], ['Mother', p.mother],
+    ['Contact person', p.contact], ['Partner expectations', p.expect], ['Notes', p.notes]
+  ].filter(r=>r[1]).map(r=>`<div class="drow"><div class="k">${r[0]}</div><div class="v">${esc(r[1])}</div></div>`).join('');
+
+  const phone=(p.phone||'').replace(/[^\d+]/g,'');
+  const sub=[p.age?p.age+' yrs':'', p.status, p.location].filter(Boolean).join(' · ');
+  document.getElementById('sheetBox').innerHTML=`
+    <div class="top">${pic}<div><h2>${esc(p.name)}</h2><div class="sub">${esc(sub)}</div></div>
+      <button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="detail">${rows||'<p>No extra details.</p>'}</div>
+    <div class="foot">
+      ${phone?`<a class="btn call" href="tel:${phone}">📞 Call</a><a class="btn ghost" href="https://wa.me/${phone.replace('+','')}" target="_blank">WhatsApp</a>`
+            :`<span style="color:var(--muted);font-size:13px;align-self:center">No phone number on file</span>`}
+      <button class="btn ghost" style="margin-left:auto" onclick="window.print()">Print</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+document.addEventListener('keyup',e=>{ if(e.key==='Escape') closeModal(); });
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+</script>
+</body>
+</html>
