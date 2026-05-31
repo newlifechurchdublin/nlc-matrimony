@@ -69,7 +69,7 @@
   .drow:last-child{border-bottom:0}
   .drow .k{flex:none; width:150px; color:var(--muted); font-weight:600}
   .drow .v{flex:1}
-  .sheet .foot{display:flex; gap:10px; padding:14px 18px; border-top:1px solid var(--line)}
+  .sheet .foot{display:flex; flex-wrap:wrap; gap:10px; padding:14px 18px; border-top:1px solid var(--line)}
   .btn.ghost{background:#fff; color:var(--green); border:1px solid var(--green)}
   .btn.call{background:#2e7d4f}
   .btn.danger{background:#fff; color:#b3261e; border:1px solid #e2b6b2}
@@ -404,13 +404,46 @@ function openModal(i){
     <div class="foot">
       ${phone?`<a class="btn call" href="tel:${phone}">📞 Call</a><a class="btn ghost" href="https://wa.me/${phone.replace('+','')}" target="_blank">WhatsApp</a>`
             :`<span style="color:var(--muted);font-size:13px;align-self:center">No phone number on file</span>`}
-      <button class="btn ghost" style="margin-left:auto" onclick="window.print()">Print</button>
+      <button class="btn" style="margin-left:auto" onclick="shareProfile(${i})">↗ Share</button>
+      <button class="btn ghost" onclick="window.print()">Print</button>
       <button class="btn danger" onclick="removeProfile(${i})">🗑 Remove</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 document.addEventListener('keyup',e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ---------- Share a single profile (native share sheet / copy) ---------- */
+function shareProfile(i){
+  const p = PROFILES[i]; if(!p) return;
+  const L = [];
+  L.push('New Life Church — Matrimony');
+  L.push('');
+  L.push(p.name);
+  const line1 = [p.age?p.age+' yrs':'', p.gender==='M'?'Male / Groom':p.gender==='F'?'Female / Bride':p.genderRaw, p.height].filter(Boolean).join(' · ');
+  if(line1) L.push(line1);
+  const add = (label,val)=>{ if(val) L.push(label+': '+val); };
+  add('Status', p.status);
+  add('Education', p.education);
+  add('Occupation', p.job);
+  add('Working location', p.location);
+  add('Native place', p.native);
+  add('Church', p.church);
+  add('Contact', [p.contact, p.phone].filter(Boolean).join(' — '));
+  if(p.expect){ L.push(''); L.push('Expectations: ' + p.expect); }
+  if(p.photo){ L.push(''); L.push('Photo: ' + p.photo); }
+  const text = L.join('\n');
+
+  if(navigator.share){
+    navigator.share({ title: 'Matrimony profile — ' + p.name, text }).catch(()=>{});
+  } else if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(()=>alert('Profile details copied — paste into WhatsApp, SMS or email.'))
+      .catch(()=>window.prompt('Copy the profile details:', text));
+  } else {
+    window.prompt('Copy the profile details:', text);
+  }
+}
 
 /* ---------- Remove a profile (deletes the row + photo) ---------- */
 function removeProfile(i){
