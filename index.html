@@ -402,10 +402,10 @@ function openModal(i){
       <button class="close-x" onclick="closeModal()">×</button></div>
     <div class="detail">${rows||'<p>No extra details.</p>'}</div>
     <div class="foot">
-      ${phone?`<a class="btn call" href="tel:${phone}">📞 Call</a><a class="btn ghost" href="https://wa.me/${phone.replace('+','')}" target="_blank">WhatsApp</a>`
+      ${phone?`<a class="btn call" href="tel:${phone}">📞 Call</a><a class="btn ghost" href="https://wa.me/${phone.replace('+','')}" target="_blank">💬 Message</a>`
             :`<span style="color:var(--muted);font-size:13px;align-self:center">No phone number on file</span>`}
-      <button class="btn" style="margin-left:auto" onclick="shareProfile(${i})">↗ Share</button>
-      <button class="btn ghost" onclick="window.print()">Print</button>
+      <button class="btn ghost" style="margin-left:auto" onclick="copyProfile(${i}, event)">📋 Copy</button>
+      <button class="btn" onclick="shareWhatsApp(${i})">↗ Send on WhatsApp</button>
       <button class="btn danger" onclick="removeProfile(${i})">🗑 Remove</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
@@ -413,9 +413,8 @@ function openModal(i){
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 document.addEventListener('keyup',e=>{ if(e.key==='Escape') closeModal(); });
 
-/* ---------- Share a single profile (native share sheet / copy) ---------- */
-function shareProfile(i){
-  const p = PROFILES[i]; if(!p) return;
+/* ---------- Share a single profile ---------- */
+function buildShareText(p){
   const L = [];
   L.push('New Life Church — Matrimony');
   L.push('');
@@ -432,14 +431,21 @@ function shareProfile(i){
   add('Contact', [p.contact, p.phone].filter(Boolean).join(' — '));
   if(p.expect){ L.push(''); L.push('Expectations: ' + p.expect); }
   if(p.photo){ L.push(''); L.push('Photo: ' + p.photo); }
-  const text = L.join('\n');
-
-  if(navigator.share){
-    navigator.share({ title: 'Matrimony profile — ' + p.name, text }).catch(()=>{});
-  } else if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text)
-      .then(()=>alert('Profile details copied — paste into WhatsApp, SMS or email.'))
-      .catch(()=>window.prompt('Copy the profile details:', text));
+  return L.join('\n');
+}
+// Opens WhatsApp (app or web) with the profile pre-filled; pick any contact to send.
+function shareWhatsApp(i){
+  const p = PROFILES[i]; if(!p) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(buildShareText(p)), '_blank');
+}
+// Copies the profile text to clipboard so it can be pasted anywhere.
+function copyProfile(i, ev){
+  const p = PROFILES[i]; if(!p) return;
+  const text = buildShareText(p);
+  const btn = ev && ev.target;
+  const flash = () => { if(btn){ const o=btn.textContent; btn.textContent='✓ Copied'; setTimeout(()=>btn.textContent=o,1500);} };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(flash).catch(()=>window.prompt('Copy the profile details:', text));
   } else {
     window.prompt('Copy the profile details:', text);
   }
